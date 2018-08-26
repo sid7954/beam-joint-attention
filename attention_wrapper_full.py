@@ -1022,8 +1022,7 @@ def _compute_beam_joint_attention(attention_mechanism, cell_output, previous_ali
   context = array_ops.squeeze(context, [1])
 
   if attention_layer is not None:
-    avg_attention_vector = array_ops.concat([cell_output, context],1)
-    attention = attention_layer(avg_attention_vector)
+    attention = attention_layer(array_ops.concat([cell_output, context],1))
     if output_layer is not None:
       #Shape of memory layer(encoder states)
       encoder_shape=tf.shape(attention_mechanism.values)
@@ -1048,14 +1047,7 @@ def _compute_beam_joint_attention(attention_mechanism, cell_output, previous_ali
       alignments = tf.verify_tensor_all_finite( alignments, msg="Beam-Joint Attention failed as alignments are not finite.")
       beam_joint_logits = tf.verify_tensor_all_finite( beam_joint_logits, msg="Beam-Joint Attention failed as logits are not finite.")
 
-      #Size of avg_logits is [batch_size,vocab_size]
-      avg_logits=output_layer(attention_layer(avg_attention_vector)) 
-
-      top_prob=tf.reduce_sum(top_alignments.values,1)
-
-
-      beam_joint_logits = (math_ops.reduce_sum(array_ops.expand_dims(top_alignments.values, 2)*tf.nn.softmax(beam_joint_logits), axis=1))
-      logits=beam_joint_logits + tf.expand_dims((1.0 -top_prob),1)*tf.nn.softmax(avg_logits)
+      logits = (math_ops.reduce_sum(array_ops.expand_dims(top_alignments.values, 2)*tf.nn.softmax(beam_joint_logits), axis=1))
       
       logits = tf.verify_tensor_all_finite( logits, msg="Logits failed")
       logits = tf.log(logits + 1e-12)
@@ -1067,69 +1059,6 @@ def _compute_beam_joint_attention(attention_mechanism, cell_output, previous_ali
     attention = context
 
   return attention, alignments
-
-# #Beam-Joint
-# def _compute_beam_joint_attention(attention_mechanism, cell_output, previous_alignments,
-#                        attention_layer, output_layer=None):
-#   """Computes the attention and alignments for a given attention_mechanism for Beam-Joint Attention."""
-#   alignments = attention_mechanism(
-#       cell_output, previous_alignments=previous_alignments)
-
-#   # Reshape from [batch_size, memory_time] to [batch_size, 1, memory_time]
-#   expanded_alignments = array_ops.expand_dims(alignments, 1)
-#   # Context is the inner product of alignments and values along the
-#   # memory time dimension.
-#   # alignments shape is
-#   #   [batch_size, 1, memory_time]
-#   # attention_mechanism.values shape is
-#   #   [batch_size, memory_time, memory_size]
-#   # the batched matmul is over memory_time, so the output shape is
-#   #   [batch_size, 1, memory_size].
-#   # we then squeeze out the singleton dim.
-#   context = math_ops.matmul(expanded_alignments, attention_mechanism.values)
-#   context = array_ops.squeeze(context, [1])
-
-#   if attention_layer is not None:
-#     attention = attention_layer(array_ops.concat([cell_output, context],1))
-#     if output_layer is not None:
-#       #Shape of memory layer(encoder states)
-#       encoder_shape=tf.shape(attention_mechanism.values)
-
-#       #Pick top 5 most probable memory states unless the memory_time < 5
-#       temp_k=tf.minimum(5,tf.shape([alignments])[1])
-#       top_alignments=tf.nn.top_k(alignments,k=temp_k) 
-
-#       batch_tensor=tf.reshape(tf.tile(tf.expand_dims(tf.range(encoder_shape[0]),1),[1,temp_k]),[encoder_shape[0]*temp_k,1])
-#       indices_tensor=tf.reshape(top_alignments.indices,[-1,1])
-      
-#       #top_encoder_parts is the top 5 (or memory_time if memory_time < 5) most probable encoder states
-#       top_encoder_parts=tf.gather_nd(attention_mechanism.values,tf.reshape(tf.concat([batch_tensor,indices_tensor],1),[encoder_shape[0],temp_k,-1]))
-
-#       cell_output = array_ops.tile( array_ops.expand_dims(cell_output,1), [1, temp_k, 1])
-
-#       beam_joint_attention = attention_layer(array_ops.concat([cell_output, top_encoder_parts], 2))
-#       beam_joint_attention = tf.verify_tensor_all_finite( beam_joint_attention, msg="Beam-Joint Attention failed as attention values are not finite.")
-     
-#       beam_joint_logits = output_layer(beam_joint_attention)
-
-#       alignments = tf.verify_tensor_all_finite( alignments, msg="Beam-Joint Attention failed as alignments are not finite.")
-#       beam_joint_logits = tf.verify_tensor_all_finite( beam_joint_logits, msg="Beam-Joint Attention failed as logits are not finite.")
-
-
-#       beam_joint_logits = (math_ops.reduce_sum(array_ops.expand_dims(top_alignments.values, 2)*tf.nn.softmax(beam_joint_logits), axis=1))
- 
-#       beam_joint_logits = tf.verify_tensor_all_finite( beam_joint_logits, msg="Logits failed")
-#       beam_joint_logits = tf.log(beam_joint_logits + 1e-12)
-#       beam_joint_logits = tf.verify_tensor_all_finite( beam_joint_logits, msg="LogLogits failed")
-
-#       return attention, alignments, beam_joint_logits
-
-#   else:
-#     attention = context
-
-#   return attention, alignments
-
-
 
 class AttentionWrapper(rnn_cell_impl.RNNCell):
   """Wraps another `RNNCell` with attention.
