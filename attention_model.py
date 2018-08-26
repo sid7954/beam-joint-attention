@@ -21,7 +21,7 @@ import tensorflow as tf
 
 from . import model
 from . import model_helper
-from . import attention_wrapper_full as seq2seq 
+from . import attention_wrapper as seq2seq 
 
 from tensorflow.python.ops import rnn_cell_impl
 
