@@ -1,6 +1,6 @@
 BEAM-JOINT ATTENTION
 
-This code provides a working implementation of the Beam-Joint attention mechanism as described in the paper (link to paper) accepted at EMNLP 2018. For more details on the formulation refer to the paper.
+This code provides a working implementation of the Beam-Joint attention mechanism as described in the paper (http://aclweb.org/anthology/D18-1065) accepted at EMNLP 2018. For more details on the formulation refer to the paper.
 
 This code builds upon the tensorflow/nmt tutorial repository. We will describe the files which have a significant change from those in the nmt tutorial.
 
@@ -13,3 +13,13 @@ This code builds upon the tensorflow/nmt tutorial repository. We will describe t
 The additional change to the tensorflow/nmt tutorial repository is that now there is an additional value that the 'attention_architecture' argument can take (attention_architecture=joint) and using this involves using beam-joint attention mechanism.
 
 For implementing different modes Beam-Joint and Full-Joint Attention: Currently this implementation is provided for Beam-Joint with k=5 (If sentences shorter than this are encountered, then all their encoder probabilities are taken into account rather than just the top-k). If you want to change this to Full-Joint Attention, you need to do changes to attention_wrapper.py in the _compute_beam_joint_attention function by removing usage of tf.nn.top_k
+
+How do I cite beam-joint attention?
+
+@inproceedings{ShankarSS18,
+  title={Surprisingly Easy Hard-Attention for Sequence to Sequence Learning},
+  author={Shiv Shankar and Siddhant Garg and Sunita Sarawagi},
+  booktitle={Proceedings of the 2018 conference on Empirical Methods in Natural Language Processing},
+  year={2018},
+  organization={Association for Computational Linguistics}
+}
